@@ -34,6 +34,9 @@ find_package(OpenCV REQUIRED)
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
 
+find_package(PCL REQUIRED COMPONENTS common)
+include_directories(${PCL_INCLUDE_DIRS})
+
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
@@ -77,6 +80,7 @@ src/Viewer.cc
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
+${PCL_COMMON_LIBRARIES}
 ${Pangolin_LIBRARIES}
 DBoW2
 g2o

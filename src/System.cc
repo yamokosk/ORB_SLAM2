@@ -507,4 +507,22 @@ void System::SaveTrajectoryKITTI(const string &filename)
     cout << endl << "trajectory saved!" << endl;
 }
 
+void System::GetMapPoints(pcl::PointCloud<pcl::PointXYZ> &pc)
+{
+    unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+    // std::cout << "Got a lock on the map" << std::endl;
+    std::vector<MapPoint*> points = mpMap->GetAllMapPoints();
+    // std::cout << "getting " << points.size() << std::endl;
+    for (unsigned int ii=0; ii < points.size(); ii++)
+    {
+        if(points[ii]->isBad()) // || spRefMPs.count(vpMPs[i]))
+            continue;
+        cv::Mat pos = points[ii]->GetWorldPos();
+        pc.points.push_back(pcl::PointXYZ(pos.at<float>(0),
+            pos.at<float>(1),
+            pos.at<float>(2)));
+    }
+    // std::cout << "got " << pc.points.size() << std::endl;
+}
+
 } //namespace ORB_SLAM

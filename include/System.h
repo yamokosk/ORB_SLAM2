@@ -22,10 +22,12 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-#include<string>
-#include<thread>
-#include<opencv2/core/core.hpp>
+#include <string>
+#include <thread>
+#include <opencv2/core/core.hpp>
 #include <yaml-cpp/yaml.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
 
 #include "Tracking.h"
 #include "FrameDrawer.h"
@@ -113,7 +115,9 @@ public:
     // TODO: Save/Load functions
     // SaveMap(const string &filename);
     // LoadMap(const string &filename);
-    void SetCameraParameters();
+
+    // Access point map
+    void GetMapPoints(pcl::PointCloud<pcl::PointXYZ> &pc);
 
 private:
 

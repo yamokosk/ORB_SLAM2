@@ -145,7 +145,113 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
         else
             mDepthMapFactor = 1.0f/mDepthMapFactor;
     }
+}
 
+Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap,
+    KeyFrameDatabase* pKFDB, const YAML::Node& fSettings, const int sensor):
+        mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
+        mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys),
+        mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
+{
+    float fx = fSettings["Camera.fx"].as<float>();
+    float fy = fSettings["Camera.fy"].as<float>();
+    float cx = fSettings["Camera.cx"].as<float>();
+    float cy = fSettings["Camera.cy"].as<float>();
+
+    cv::Mat K = cv::Mat::eye(3,3,CV_32F);
+    K.at<float>(0,0) = fx;
+    K.at<float>(1,1) = fy;
+    K.at<float>(0,2) = cx;
+    K.at<float>(1,2) = cy;
+    K.copyTo(mK);
+
+    cv::Mat DistCoef(4,1,CV_32F);
+    DistCoef.at<float>(0) = fSettings["Camera.k1"].as<float>();
+    DistCoef.at<float>(1) = fSettings["Camera.k2"].as<float>();
+    DistCoef.at<float>(2) = fSettings["Camera.p1"].as<float>();
+    DistCoef.at<float>(3) = fSettings["Camera.p2"].as<float>();
+    const float k3 = fSettings["Camera.k3"].as<float>();
+    if(k3!=0)
+    {
+        DistCoef.resize(5);
+        DistCoef.at<float>(4) = k3;
+    }
+    DistCoef.copyTo(mDistCoef);
+
+    if (fSettings["Camera.bf"])
+    {
+        mbf = fSettings["Camera.bf"].as<float>();
+    } else {
+        mbf = 0;
+    }
+
+    float fps = fSettings["Camera.fps"].as<float>();
+    if(fps==0)
+        fps=30;
+
+    // Max/Min Frames to insert keyframes and to check relocalisation
+    mMinFrames = 0;
+    mMaxFrames = fps;
+
+    cout << endl << "Camera Parameters: " << endl;
+    cout << "- fx: " << fx << endl;
+    cout << "- fy: " << fy << endl;
+    cout << "- cx: " << cx << endl;
+    cout << "- cy: " << cy << endl;
+    cout << "- k1: " << DistCoef.at<float>(0) << endl;
+    cout << "- k2: " << DistCoef.at<float>(1) << endl;
+    if(DistCoef.rows==5)
+        cout << "- k3: " << DistCoef.at<float>(4) << endl;
+    cout << "- p1: " << DistCoef.at<float>(2) << endl;
+    cout << "- p2: " << DistCoef.at<float>(3) << endl;
+    cout << "- fps: " << fps << endl;
+
+
+    int nRGB = fSettings["Camera.RGB"].as<int>();
+    mbRGB = nRGB;
+
+    if(mbRGB)
+        cout << "- color order: RGB (ignored if grayscale)" << endl;
+    else
+        cout << "- color order: BGR (ignored if grayscale)" << endl;
+
+    // Load ORB parameters
+
+    int nFeatures = fSettings["ORBextractor.nFeatures"].as<int>();
+    float fScaleFactor = fSettings["ORBextractor.scaleFactor"].as<float>();
+    int nLevels = fSettings["ORBextractor.nLevels"].as<int>();
+    int fIniThFAST = fSettings["ORBextractor.iniThFAST"].as<int>();
+    int fMinThFAST = fSettings["ORBextractor.minThFAST"].as<int>();
+
+    mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+
+    if(sensor==System::STEREO)
+        mpORBextractorRight = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+
+    if(sensor==System::MONOCULAR)
+        mpIniORBextractor = new ORBextractor(2*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+
+    cout << endl  << "ORB Extractor Parameters: " << endl;
+    cout << "- Number of Features: " << nFeatures << endl;
+    cout << "- Scale Levels: " << nLevels << endl;
+    cout << "- Scale Factor: " << fScaleFactor << endl;
+    cout << "- Initial Fast Threshold: " << fIniThFAST << endl;
+    cout << "- Minimum Fast Threshold: " << fMinThFAST << endl;
+
+    if ((sensor==System::STEREO || sensor==System::RGBD) && (fSettings["ThDepth"]))
+    {
+        mThDepth = mbf * fSettings["ThDepth"].as<float>() / fx;
+        cout << endl << "Depth Threshold (Close/Far Points): " << mThDepth << endl;
+    }
+
+    if ((sensor==System::RGBD) && (fSettings["DepthMapFactor"]))
+    {
+        mDepthMapFactor = fSettings["DepthMapFactor"].as<float>();
+        if(fabs(mDepthMapFactor)<1e-5)
+            mDepthMapFactor=1;
+        else
+            mDepthMapFactor = 1.0f/mDepthMapFactor;
+    }
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)

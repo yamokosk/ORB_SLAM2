@@ -38,7 +38,16 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
     mPointSize = fSettings["Viewer.PointSize"];
     mCameraSize = fSettings["Viewer.CameraSize"];
     mCameraLineWidth = fSettings["Viewer.CameraLineWidth"];
+}
 
+MapDrawer::MapDrawer(Map* pMap, const YAML::Node& fSettings):mpMap(pMap)
+{
+    mKeyFrameSize = fSettings["Viewer.KeyFrameSize"].as<float>();
+    mKeyFrameLineWidth = fSettings["Viewer.KeyFrameLineWidth"].as<float>();
+    mGraphLineWidth = fSettings["Viewer.GraphLineWidth"].as<float>();
+    mPointSize = fSettings["Viewer.PointSize"].as<float>();
+    mCameraSize = fSettings["Viewer.CameraSize"].as<float>();
+    mCameraLineWidth = fSettings["Viewer.CameraLineWidth"].as<float>();
 }
 
 void MapDrawer::DrawMapPoints()

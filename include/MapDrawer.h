@@ -25,6 +25,7 @@
 #include"MapPoint.h"
 #include"KeyFrame.h"
 #include<pangolin/pangolin.h>
+#include <yaml-cpp/yaml.h>
 
 #include<mutex>
 
@@ -35,6 +36,7 @@ class MapDrawer
 {
 public:
     MapDrawer(Map* pMap, const string &strSettingPath);
+    MapDrawer(Map* pMap, const YAML::Node& fsSettings);
 
     Map* mpMap;
 

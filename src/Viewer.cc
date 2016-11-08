@@ -51,6 +51,29 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
     mViewpointF = fSettings["Viewer.ViewpointF"];
 }
 
+Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const YAML::Node& fSettings):
+    mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpTracker(pTracking),
+    mbFinishRequested(false), mbFinished(true), mbStopped(false), mbStopRequested(false)
+{
+    float fps = fSettings["Camera.fps"].as<float>();
+    if(fps<1)
+        fps=30;
+    mT = 1e3/fps;
+
+    mImageWidth = fSettings["Camera.width"].as<float>();
+    mImageHeight = fSettings["Camera.height"].as<float>();
+    if(mImageWidth<1 || mImageHeight<1)
+    {
+        mImageWidth = 640;
+        mImageHeight = 480;
+    }
+
+    mViewpointX = fSettings["Viewer.ViewpointX"].as<float>();
+    mViewpointY = fSettings["Viewer.ViewpointY"].as<float>();
+    mViewpointZ = fSettings["Viewer.ViewpointZ"].as<float>();
+    mViewpointF = fSettings["Viewer.ViewpointF"].as<float>();
+}
+
 void Viewer::Run()
 {
     mbFinished = false;
